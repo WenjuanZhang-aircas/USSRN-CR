@@ -9,27 +9,6 @@ from torch.nn import Module, Sequential, Conv2d, ReLU,AdaptiveMaxPool2d, Adaptiv
     NLLLoss, BCELoss, CrossEntropyLoss, AvgPool2d, MaxPool2d, Parameter, Linear, Sigmoid, Softmax, Dropout, Embedding
 
 
-class MBblock(nn.Module):
-    def __init__(
-        self, n_feats):
-        super(MBblock, self).__init__()
-        self.c1 = default_conv(in_channels=n_feats,out_channels=n_feats,kernel_size=3)
-        self.act1 = nn.PReLU()
-        self.c_depth = nn.Conv2d(in_channels=n_feats,out_channels=n_feats,kernel_size=3,
-                                 stride=1,
-                                 padding=1,
-                                 groups=n_feats
-                                 )
-        self.act2 = nn.PReLU()
-        self.c_point = default_conv(in_channels=n_feats,out_channels=n_feats,kernel_size=1)
-
-    def forward(self, x):
-        out = self.c1(x)
-        out = self.act1(out)
-        out = self.c_depth(out)
-        out = self.act2(out)
-        out = self.c_point(out)
-        return out + x
     
 def default_conv(in_channels, out_channels, kernel_size,stride=1, bias=True):
     return nn.Conv2d(
@@ -40,19 +19,6 @@ def default_conv_my_conv(in_channels, out_channels, kernel_size,stride=1, bias=T
     return nn.Conv2d(
         in_channels, out_channels, kernel_size,
         padding=(kernel_size//2),stride=stride, bias=bias)
-
-class BasicBlock(nn.Sequential):
-    def __init__(
-        self, conv, in_channels, out_channels, kernel_size, stride=1, bias=True,
-        bn=False, act=nn.PReLU()):
-
-        m = [conv(in_channels, out_channels, kernel_size, bias=bias)]
-        if bn:
-            m.append(nn.BatchNorm2d(out_channels))
-        if act is not None:
-            m.append(act)
-
-        super(BasicBlock, self).__init__(*m)
     
 class ResBlock(nn.Module):
     def __init__(
@@ -76,35 +42,6 @@ class ResBlock(nn.Module):
         res += x
         return res
 
-class Upsampler(nn.Sequential):
-    def __init__(self, conv, scale, n_feats, bn=False, act=False, bias=True):
-
-        m = []
-        if (scale & (scale - 1)) == 0:    # Is scale = 2^n?
-            for _ in range(int(math.log(scale, 2))):
-                m.append(conv(n_feats, 4 * n_feats, 3, bias))
-                m.append(nn.PixelShuffle(2))
-                if bn:
-                    m.append(nn.BatchNorm2d(n_feats))
-                if act == 'relu':
-                    m.append(nn.ReLU(True))
-                elif act == 'prelu':
-                    m.append(nn.PReLU(n_feats))
-
-        elif scale == 3:
-            m.append(conv(n_feats, 9 * n_feats, 3, bias))
-            m.append(nn.PixelShuffle(3))
-            if bn:
-                m.append(nn.BatchNorm2d(n_feats))
-            if act == 'relu':
-                m.append(nn.ReLU(True))
-            elif act == 'prelu':
-                m.append(nn.PReLU(n_feats))
-        else:
-            raise NotImplementedError
-
-        super(Upsampler, self).__init__(*m)
-
 class GateConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, transpose=False):
         super(GateConv, self).__init__()
@@ -117,7 +54,7 @@ class GateConv(nn.Module):
             self.gate_conv = nn.Conv2d(in_channels, out_channels * 2,
                                        kernel_size=kernel_size,
                                        stride=stride, padding=padding)
-	  self.tail=nn.ReLU()
+	    self.tail=nn.ReLU()
 
     def forward(self, x):
         x = self.gate_conv(x)

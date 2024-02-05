@@ -161,35 +161,3 @@ def extract_canny(images,batch):
         img_edge2 = img_edge2.astype(np.float32)
         img_edge2out[i,0,:,:] = cv2.normalize(img_edge2, None, 0, 1, cv2.NORM_MINMAX)
     return img_edge2out
-
-
-
-def matrix(image, conv_ker):
-    res = (image * conv_ker).sum()
-    res = res / (conv_ker.shape[0] * conv_ker.shape[1])
-    if (res < 0):
-        res = 0
-    elif res > 255:
-        res = 255
-    return res
-
-
-def conv_operation(image):
-    conv_kernel = np.array([[1, 1, 1, 1, 1, 1, 1],
-                            [1, 1, 1, 1, 1, 1, 1],
-                            [1, 1, 1, 1, 1, 1, 1],
-                            [1, 1, 1, 1, 1, 1, 1],
-                            [1, 1, 1, 1, 1, 1, 1],
-                            [1, 1, 1, 1, 1, 1, 1],
-                            [1, 1, 1, 1, 1, 1, 1]])  # 7*7膨胀。
-    conv_kernel_heigh = conv_kernel.shape[0]
-    conv_kernel_width = conv_kernel.shape[1]
-    conv_heigh = image.shape[0] - conv_kernel.shape[0] + 1  # 确定卷积结果的大小
-    conv_width = image.shape[1] - conv_kernel.shape[1] + 1
-    conv_ret = np.zeros((conv_heigh, conv_width), np.uint8)
-
-    for i in range(conv_heigh):
-        for j in range(conv_width):
-            conv_ret[i, j] = matrix(image[i:(i + conv_kernel_heigh), j:(j + conv_kernel_width)], conv_kernel)
-
-    return conv_ret
